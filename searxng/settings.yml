@@ -1,0 +1,97 @@
+# SearXNG configuration
+
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "ANGERS - Underground Search"
+  contact_url: "mailto:admin@localhost"
+  enable_metrics: false
+
+search:
+  safe_search: 0  # 0 = Nothing filtered (Uncensored)
+  autocomplete: "duckduckgo"
+  default_lang: "auto"
+  ban_time_on_ip: 5
+  max_ban_time_on_ip: 120
+  
+  # Image search specific
+  formats:
+    - html
+    - json
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "ultrasecretkeyreplacebeforeproduction" # Change this!
+  base_url: "http://localhost:8080"
+  image_proxy: true  # Proxy images to avoid tracking/loading from source
+
+ui:
+  static_use_hash: true
+  default_locale: "ja"
+  query_in_title: true
+  infinite_scroll: true
+  center_alignment: true
+  default_theme: simple
+  theme_args:
+    simple_style: dark  # Force dark mode
+  
+  # Default categories to display
+  default_category: images 
+
+categories_as_tabs:
+  images:
+    - google images
+    - bing images
+    - duckduckgo images
+    - qwant images
+    - startpage images
+    - yahoo images
+    - yandex images
+    - 1px
+    - deviantart
+    - flickr
+    - wallhaven
+    - unsplash
+    - pexels
+    - openverse
+    - library of congress
+    - wikimedia commons
+    - bravesearch images
+
+engines:
+  - name: yandex images
+    engine: yandex_images
+    shortcut: yi
+    disabled: false
+  
+  - name: google images
+    engine: google_images
+    shortcut: gi
+    disabled: false
+    
+  - name: bing images
+    engine: bing_images
+    shortcut: bi
+    disabled: false
+
+  - name: duckduckgo images
+    engine: duckduckgo_images
+    shortcut: di
+    disabled: false
+
+  - name: 1px
+    engine: 1px
+    shortcut: px
+    disabled: false
+
+  - name: wallhaven
+    engine: wallhaven
+    shortcut: wh
+    disabled: false
+
+  - name: deviantart
+    engine: deviantart
+    shortcut: da
+    disabled: false
