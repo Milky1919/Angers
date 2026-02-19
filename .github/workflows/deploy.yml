@@ -1,24 +1,13 @@
-name: Deploy to CapRover
+name: Deploy to CapRover (Webhook)
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  deploy:
+  webhook_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Create deployment tarball
-        run: tar -czf deploy.tar --exclude='.git' .
-
-      - name: Deploy to CapRover
+      - name: Trigger CapRover Build
         run: |
-          # Remove trailing slash from URL if present
-          CAPROVER_URL="${{ secrets.CAPROVER_URL }}"
-          CAPROVER_URL=${CAPROVER_URL%/}
-          
-          curl -v -H "x-captain-auth: ${{ secrets.CAPROVER_APP_TOKEN }}" \
-               -F "tarFile=@deploy.tar" \
-               "$CAPROVER_URL/api/v2/user/apps/appData/${{ secrets.CAPROVER_APP_NAME }}"
+          curl -X POST "${{ secrets.CAPROVER_WEBHOOK_URL }}"
