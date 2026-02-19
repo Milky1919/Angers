@@ -2,6 +2,7 @@
   "schemaVersion": 2,
   "dockerfileLines": [
     "FROM searxng/searxng:latest",
-    "COPY ./searxng/settings.yml /etc/searxng/settings.yml"
+    "COPY ./searxng/settings.yml /etc/searxng/settings.yml",
+    "COPY ./searxng/templates/simple/result_templates/images.html /usr/local/searxng/searx/templates/simple/result_templates/images.html"
   ]
 }
