@@ -25,6 +25,7 @@ services:
       - "8080:8080"
     volumes:
       - ./searxng:/etc/searxng:rw
+      - ./searxng/templates/simple/result_templates/images.html:/usr/local/searxng/searx/templates/simple/result_templates/images.html:rw
     environment:
       - SEARXNG_BASE_URL=http://localhost:8080/
       - UWSGI_WORKERS=4

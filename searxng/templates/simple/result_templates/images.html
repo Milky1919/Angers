@@ -1,0 +1,460 @@
+{% if loop.first %}
+<style>
+        /* --- Google-like Grid Layout Styles (Injected) --- */
+
+        /* Force strict localized overflow handling */
+        html,
+        body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+        }
+
+        #main_results {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+                overflow-x: hidden !important;
+        }
+
+        /* Force parent container to use Grid */
+        #main_results #urls {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+                gap: 12px !important;
+                justify-content: center !important;
+                padding: 12px !important;
+                margin: 0 auto !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+        }
+
+        /* Hide potentially interfering clearfix divs */
+        #main_results .clearfix {
+                display: none !important;
+        }
+
+        @media (max-width: 768px) {
+                #main_results #urls {
+                        grid-template-columns: repeat(2, 1fr) !important;
+                        gap: 8px !important;
+                        padding: 8px !important;
+                }
+        }
+
+        /* Card Style */
+        .result-images {
+                width: 100% !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 1px solid #3c4043 !important;
+                border-radius: 12px !important;
+                background-color: #202124 !important;
+                overflow: hidden !important;
+                display: flex !important;
+                flex-direction: column !important;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+                transition: transform 0.2s, box-shadow 0.2s;
+                position: relative !important;
+        }
+
+        .result-images:hover {
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+                z-index: 10;
+                transform: scale(1.02);
+        }
+
+        /* Image Container */
+        .result-images>.image-link-wrapper {
+                display: block !important;
+                width: 100% !important;
+                aspect-ratio: 4 / 3 !important;
+                overflow: hidden !important;
+                position: relative !important;
+                margin: 0 !important;
+                background-color: #000;
+                cursor: pointer;
+        }
+
+        /* Image */
+        .result-images img.image_thumbnail {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+                margin: 0 !important;
+                display: block !important;
+                transition: transform 0.3s ease;
+                border: none !important;
+        }
+
+        /* GIF Badge */
+        .gif-badge {
+                position: absolute;
+                bottom: 6px;
+                right: 6px;
+                background: rgba(0, 0, 0, 0.7);
+                color: #0f0;
+                /* Matrix Green for underground feel */
+                border: 1px solid #0f0;
+                font-size: 10px;
+                font-weight: bold;
+                padding: 2px 6px;
+                border-radius: 4px;
+                pointer-events: none;
+                backdrop-filter: blur(2px);
+                z-index: 5;
+                text-transform: uppercase;
+                box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+
+        /* Bottom Info Area */
+        .image-info {
+                padding: 8px 10px !important;
+                background: #202124 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 4px !important;
+                flex-grow: 1 !important;
+                border-top: 1px solid #3c4043;
+                min-height: 0 !important;
+        }
+
+        /* Site Source */
+        .image-info .source {
+                font-size: 11px !important;
+                color: #9aa0a6 !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                margin: 0 !important;
+                opacity: 0.9;
+        }
+
+        .image-info .source img.favicon {
+                width: 14px !important;
+                height: 14px !important;
+                border-radius: 50% !important;
+                vertical-align: middle !important;
+                margin: 0 !important;
+                flex-shrink: 0 !important;
+        }
+
+        /* Title */
+        .image-info .title-link {
+                font-size: 12px !important;
+                color: #e8eaed !important;
+                line-height: 1.4 !important;
+                display: -webkit-box !important;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden !important;
+                text-decoration: none !important;
+                font-weight: 500;
+                margin: 0 !important;
+                word-break: break-all !important;
+        }
+
+        .image-info .title-link:hover {
+                text-decoration: underline !important;
+                color: #8ab4f8 !important;
+        }
+
+        /* --- MODAL STYLES --- */
+        #shared-image-modal {
+                display: none;
+                position: fixed;
+                z-index: 99999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background-color: rgba(0, 0, 0, 0.95);
+                backdrop-filter: blur(5px);
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+        }
+
+        #shared-image-modal.active {
+                display: flex;
+                opacity: 1;
+        }
+
+        .modal-content-wrapper {
+                position: relative;
+                max-width: 90%;
+                max-height: 80%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+                border: 1px solid #333;
+        }
+
+        .modal-image {
+                max-width: 100%;
+                max-height: 80vh;
+                object-fit: contain;
+                display: block;
+        }
+
+        .modal-info-bar {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                color: #fff;
+                padding: 15px;
+                box-sizing: border-box;
+                border-top: 1px solid #333;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                position: fixed;
+                /* Stick to bottom of screen */
+        }
+
+        .modal-text {
+                flex: 1;
+                padding-right: 20px;
+        }
+
+        .modal-title {
+                font-size: 1.1rem;
+                font-weight: bold;
+                color: #fff;
+                margin-bottom: 5px;
+                display: block;
+        }
+
+        .modal-source {
+                font-size: 0.9rem;
+                color: #aaa;
+                font-family: monospace;
+        }
+
+        .modal-actions {
+                display: flex;
+                gap: 10px;
+        }
+
+        .btn-visit {
+                background: #006400;
+                color: #fff;
+                padding: 8px 16px;
+                border-radius: 4px;
+                text-decoration: none;
+                font-weight: bold;
+                font-family: monospace;
+                border: 1px solid #0f0;
+                transition: all 0.2s;
+        }
+
+        .btn-visit:hover {
+                background: #0f0;
+                color: #000;
+                box-shadow: 0 0 10px #0f0;
+        }
+
+        .close-modal {
+                position: absolute;
+                top: 20px;
+                right: 30px;
+                color: #f1f1f1;
+                font-size: 40px;
+                font-weight: bold;
+                cursor: pointer;
+                z-index: 10000;
+                transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+                color: #0f0;
+        }
+</style>
+<!-- Injected Shared Modal HTML -->
+<div id="shared-image-modal">
+        <span class="close-modal">&times;</span>
+        <div class="modal-content-wrapper">
+                <img class="modal-image" src="" alt="">
+        </div>
+        <div class="modal-info-bar">
+                <div class="modal-text">
+                        <a class="modal-title" href="" target="_blank"></a>
+                        <span class="modal-source"></span>
+                        <span class="modal-resolution" style="color:#666; margin-left:10px;"></span>
+                </div>
+                <div class="modal-actions">
+                        <a href="" target="_blank" class="btn-visit download-link" download>DL Image</a>
+                        <a href="" target="_blank" class="btn-visit site-link">Visit Site</a>
+                </div>
+        </div>
+</div>
+
+<script>
+        document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('shared-image-modal');
+                const modalImage = modal.querySelector('.modal-image');
+                const modalTitle = modal.querySelector('.modal-title');
+                const modalSource = modal.querySelector('.modal-source');
+                const modalResolution = modal.querySelector('.modal-resolution');
+                const downloadLink = modal.querySelector('.download-link');
+                const siteLink = modal.querySelector('.site-link');
+                const closeModalBtn = modal.querySelector('.close-modal');
+
+                // Function to open modal
+                function openModal(data) {
+                        modalImage.src = data.imgSrc;
+                        modalImage.alt = data.title;
+
+                        modalTitle.textContent = data.title;
+                        modalTitle.href = data.url;
+
+                        modalSource.textContent = data.source;
+                        modalResolution.textContent = data.resolution || '';
+
+                        downloadLink.href = data.imgSrc;
+                        siteLink.href = data.url;
+
+                        modal.classList.add('active');
+                        document.body.style.overflow = 'hidden'; // Lock scroll
+                }
+
+                // Function to close modal
+                function closeModal() {
+                        modal.classList.remove('active');
+                        document.body.style.overflow = ''; // Unlock scroll
+                        setTimeout(() => {
+                                modalImage.src = ''; // Clear source to stop potential loading/playing
+                        }, 300);
+                }
+
+                // Event Delegation for clicking images
+                document.body.addEventListener('click', function (e) {
+                        const wrapper = e.target.closest('.image-link-wrapper');
+                        if (wrapper) {
+                                e.preventDefault();
+                                const data = {
+                                        imgSrc: wrapper.dataset.fullSrc,
+                                        url: wrapper.dataset.url,
+                                        title: wrapper.dataset.title,
+                                        source: wrapper.dataset.source,
+                                        resolution: wrapper.dataset.resolution
+                                };
+                                openModal(data);
+                        }
+                });
+
+                // Close events
+                closeModalBtn.addEventListener('click', closeModal);
+
+                window.addEventListener('click', function (e) {
+                        if (e.target === modal) {
+                                closeModal();
+                        }
+                });
+
+                document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && modal.classList.contains('active')) {
+                                closeModal();
+                        }
+                });
+
+                // --- Aggressive Pre-loader Logic ---
+                // Pre-load images 1500px before they enter the viewport
+                const observerOptions = {
+                        root: null,
+                        rootMargin: '1500px 0px 1500px 0px',
+                        threshold: 0
+                };
+
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                        entries.forEach(entry => {
+                                if (entry.isIntersecting) {
+                                        const img = entry.target;
+                                        if (img.dataset.src) {
+                                                img.src = img.dataset.src;
+                                                img.removeAttribute('data-src');
+                                                img.classList.add('loaded');
+                                        }
+                                        observer.unobserve(img);
+                                }
+                        });
+                }, observerOptions);
+
+                function observeNewImages() {
+                        // Find images that haven't been observed yet
+                        const images = document.querySelectorAll('img.aggressive-load:not(.observed)');
+                        images.forEach(img => {
+                                imageObserver.observe(img);
+                                img.classList.add('observed');
+                        });
+                }
+
+                // Initial observation
+                observeNewImages();
+
+                // Watch for new content (Infinite Scroll)
+                const container = document.getElementById('main_results') || document.body;
+                const mutationObserver = new MutationObserver((mutations) => {
+                        let shouldUpdate = false;
+                        mutations.forEach(mutation => {
+                                if (mutation.addedNodes.length > 0) {
+                                        shouldUpdate = true;
+                                }
+                        });
+                        if (shouldUpdate) {
+                                observeNewImages();
+                        }
+                });
+
+                mutationObserver.observe(container, { childList: true, subtree: true });
+        });
+</script>
+{% endif %}
+
+<article class="result result-images {% if result['category'] %}category-{{ result['category'] }}{% endif %}">
+
+        {# Image Thumbnail (Click trigger via Event Delegation) #}
+        <div class="image-link-wrapper" data-full-src="{{ result.img_src }}" data-url="{{ result.url }}"
+                data-title="{{ result.title|striptags }}" data-source="{{ result.parsed_url.netloc }}"
+                data-resolution="{{ result.resolution|default('') }}">
+
+                <img class="image_thumbnail aggressive-load"
+                        src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                        data-src="{% if (result.img_format and 'gif' in result.img_format|lower) or (result.img_src and '.gif' in result.img_src|lower) %}{{ image_proxify(result.img_src) }}{% elif result.thumbnail_src %}{{ image_proxify(result.thumbnail_src) }}{% else %}{{ image_proxify(result.img_src) }}{% endif %}"
+                        alt="{{ result.title|striptags }}">
+
+                {% if (result.img_format and 'gif' in result.img_format|lower) or (result.img_src and '.gif' in
+                result.img_src|lower) %}
+                <span class="gif-badge">GIF</span>
+                {% endif %}
+        </div>
+
+        {# Text Info Area #}
+        <div class="image-info">
+                <a class="title-link" href="{{ result.url }}" target="_blank" rel="noopener noreferrer"
+                        title="{{ result.title|striptags }}">
+                        {{ result.title|striptags }}
+                </a>
+                <div class="source">
+                        <img class="favicon"
+                                src="https://www.google.com/s2/favicons?domain={{ result.parsed_url.netloc }}&sz=32"
+                                alt="" loading="lazy">
+                        <span>{{ result.parsed_url.netloc }}</span>
+                </div>
+        </div>
+
+</article>

@@ -63,22 +63,22 @@ categories_as_tabs:
 engines:
   - name: yandex images
     engine: yandex_images
-    shortcut: yi
+    shortcut: yii
     disabled: false
   
   - name: google images
     engine: google_images
-    shortcut: gi
+    shortcut: gii
     disabled: false
     
   - name: bing images
     engine: bing_images
-    shortcut: bi
+    shortcut: bii
     disabled: false
 
   - name: duckduckgo images
     engine: duckduckgo_images
-    shortcut: di
+    shortcut: dii
     disabled: false
 
   - name: 1px
