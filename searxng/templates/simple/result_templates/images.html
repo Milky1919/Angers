@@ -557,8 +557,102 @@
                         }
                 });
 
-                // --- Aggressive Pre-loader Logic ---
-                // Pre-load images 1500px before they enter the viewport
+                // --- UNIFIED IMAGE LOADING + ERROR HANDLING SYSTEM ---
+
+                // CSS: Ensure hidden articles are truly hidden
+                const hideStyle = document.createElement('style');
+                hideStyle.textContent = '.hidden-result { display: none !important; visibility: hidden !important; height: 0 !important; overflow: hidden !important; }';
+                document.head.appendChild(hideStyle);
+
+                // Utility: debounce
+                function debounce(func, wait) {
+                        let timeout;
+                        return function (...args) {
+                                clearTimeout(timeout);
+                                timeout = setTimeout(() => func.apply(this, args), wait);
+                        };
+                }
+
+                // Track images being monitored
+                const monitoredImages = new Set();
+
+                // Hide a result article
+                function hideResult(img) {
+                        const article = img.closest('article');
+                        if (article && !article.classList.contains('hidden-result')) {
+                                article.classList.add('hidden-result');
+                                console.log('[K0GE] Hidden broken image:', img.dataset.directSrc || img.src);
+                                debouncedRefill();
+                        }
+                }
+
+                // Validate a loaded image
+                function validateImage(img) {
+                        // Still on placeholder data URI → not loaded yet
+                        if (!img.src || img.src.startsWith('data:')) return;
+
+                        if (img.complete) {
+                                // naturalWidth === 0 means the image failed to decode/load
+                                if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                                        hideResult(img);
+                                        return;
+                                }
+                                // Suspiciously small images (hotlink protection placeholders)
+                                if (img.naturalWidth <= 2 && img.naturalHeight <= 2) {
+                                        hideResult(img);
+                                        return;
+                                }
+                                // Image loaded successfully
+                                img.classList.add('verified-ok');
+                        }
+                }
+
+                // Monitor a single image: add error/load handlers + timeout
+                function monitorImage(img) {
+                        if (monitoredImages.has(img)) return;
+                        monitoredImages.add(img);
+
+                        // Error handler
+                        img.addEventListener('error', function onError() {
+                                img.removeEventListener('error', onError);
+                                // Quick fallback: try direct src once, then hide
+                                var stage = parseInt(img.dataset.fallbackStage || '0', 10);
+                                if (stage === 0 && img.dataset.directSrc && img.dataset.directSrc !== img.src) {
+                                        img.dataset.fallbackStage = '1';
+                                        img.referrerPolicy = 'no-referrer';
+                                        img.src = img.dataset.directSrc;
+                                        // Re-add error handler for the direct src attempt
+                                        img.addEventListener('error', function onError2() {
+                                                img.removeEventListener('error', onError2);
+                                                hideResult(img);
+                                        }, { once: true });
+                                } else {
+                                        hideResult(img);
+                                }
+                        });
+
+                        // Load handler: validate the image after it loads
+                        img.addEventListener('load', function onLoad() {
+                                // Ignore placeholder data URI loads
+                                if (img.src && img.src.startsWith('data:')) return;
+                                img.removeEventListener('load', onLoad);
+                                validateImage(img);
+                        });
+
+                        // Timeout: if the image hasn't been verified after 8 seconds, hide it
+                        setTimeout(() => {
+                                if (!img.classList.contains('verified-ok')) {
+                                        // Double-check: maybe it loaded between scheduling and execution
+                                        if (img.complete && img.naturalWidth > 2 && img.naturalHeight > 2) {
+                                                img.classList.add('verified-ok');
+                                                return;
+                                        }
+                                        hideResult(img);
+                                }
+                        }, 8000);
+                }
+
+                // --- Lazy Loading via IntersectionObserver ---
                 const observerOptions = {
                         root: null,
                         rootMargin: '1500px 0px 1500px 0px',
@@ -570,6 +664,8 @@
                                 if (entry.isIntersecting) {
                                         const img = entry.target;
                                         if (img.dataset.src) {
+                                                // Start monitoring BEFORE setting src
+                                                monitorImage(img);
                                                 img.src = img.dataset.src;
                                                 img.removeAttribute('data-src');
                                                 img.classList.add('loaded');
@@ -580,7 +676,6 @@
                 }, observerOptions);
 
                 function observeNewImages() {
-                        // Find images that haven't been observed yet
                         const images = document.querySelectorAll('img.aggressive-load:not(.observed)');
                         images.forEach(img => {
                                 imageObserver.observe(img);
@@ -591,7 +686,7 @@
                 // Initial observation
                 observeNewImages();
 
-                // Watch for new content (Infinite Scroll)
+                // Watch for new content (Infinite Scroll / dynamic additions)
                 const container = document.getElementById('main_results') || document.body;
                 const mutationObserver = new MutationObserver((mutations) => {
                         let shouldUpdate = false;
@@ -604,8 +699,123 @@
                                 observeNewImages();
                         }
                 });
-
                 mutationObserver.observe(container, { childList: true, subtree: true });
+
+                // --- Periodic Sweeper: catches ANYTHING that slips through ---
+                setInterval(() => {
+                        const allArticles = document.querySelectorAll('article.result-images:not(.hidden-result)');
+                        allArticles.forEach(article => {
+                                const img = article.querySelector('img.image_thumbnail');
+                                if (!img) { article.classList.add('hidden-result'); return; }
+
+                                // Skip if still on placeholder or not yet loaded
+                                if (img.src && img.src.startsWith('data:')) return;
+                                if (!img.classList.contains('loaded')) return;
+
+                                // If the image is marked verified, skip
+                                if (img.classList.contains('verified-ok')) return;
+
+                                // Check if the image has loaded properly
+                                if (img.complete) {
+                                        if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                                                hideResult(img);
+                                        } else if (img.naturalWidth <= 2 && img.naturalHeight <= 2) {
+                                                hideResult(img);
+                                        } else {
+                                                img.classList.add('verified-ok');
+                                        }
+                                }
+                        });
+                }, 3000);
+
+                // --- Auto-Refill: fetch next page if too many results are hidden ---
+                const debouncedRefill = debounce(() => {
+                        checkAndRefillResults();
+                }, 1000);
+
+                let isFetching = false;
+                let refillAttempts = 0;
+                const MAX_REFILL_ATTEMPTS = 5;
+
+                async function checkAndRefillResults() {
+                        if (isFetching) return;
+                        if (refillAttempts >= MAX_REFILL_ATTEMPTS) return;
+
+                        const allResults = document.querySelectorAll('.result-images');
+                        let visibleCount = 0;
+                        allResults.forEach(el => {
+                                if (!el.classList.contains('hidden-result')) {
+                                        visibleCount++;
+                                }
+                        });
+
+                        if (visibleCount < 15) {
+                                console.log('[K0GE] Visible: ' + visibleCount + '. Fetching more...');
+
+                                const pagination = document.getElementById('pagination');
+                                if (!pagination) {
+                                        console.log('[K0GE] No pagination element.');
+                                        return;
+                                }
+
+                                const allForms = pagination.querySelectorAll('form');
+                                const nextForm = allForms.length > 0 ? allForms[allForms.length - 1] : null;
+                                const nextLink = pagination.querySelector('a.next_page, a[rel="next"]');
+
+                                let fetchUrl = '';
+                                let fetchOptions = {};
+
+                                if (nextForm) {
+                                        fetchUrl = nextForm.action || window.location.href;
+                                        const formData = new FormData(nextForm);
+                                        fetchOptions = {
+                                                method: nextForm.method || 'POST',
+                                                body: new URLSearchParams(formData),
+                                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                                        };
+                                } else if (nextLink) {
+                                        fetchUrl = nextLink.href;
+                                        fetchOptions = { method: 'GET' };
+                                } else {
+                                        console.log('[K0GE] No next page control.');
+                                        return;
+                                }
+
+                                try {
+                                        isFetching = true;
+                                        refillAttempts++;
+                                        const response = await fetch(fetchUrl, fetchOptions);
+                                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                                        const text = await response.text();
+
+                                        const parser = new DOMParser();
+                                        const doc = parser.parseFromString(text, 'text/html');
+
+                                        const newResults = doc.querySelectorAll('.result-images');
+                                        if (newResults.length > 0) {
+                                                const urlsContainer = document.getElementById('urls');
+                                                if (urlsContainer) {
+                                                        newResults.forEach(node => {
+                                                                const imported = document.adoptNode(node);
+                                                                urlsContainer.appendChild(imported);
+                                                        });
+                                                }
+                                                const newPagination = doc.getElementById('pagination');
+                                                if (newPagination && pagination) {
+                                                        pagination.innerHTML = newPagination.innerHTML;
+                                                }
+                                                console.log('[K0GE] Appended ' + newResults.length + ' results.');
+                                        } else {
+                                                console.log('[K0GE] No more images available.');
+                                                refillAttempts = MAX_REFILL_ATTEMPTS;
+                                        }
+                                } catch (error) {
+                                        console.error('[K0GE] Fetch error:', error);
+                                } finally {
+                                        isFetching = false;
+                                }
+                        }
+                }
         });
 </script>
 {% endif %}
@@ -621,8 +831,7 @@
                         src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
                         data-src="{% if result.thumbnail_src %}{{ result.thumbnail_src }}{% else %}{{ image_proxify(result.img_src) }}{% endif %}"
                         data-proxy-src="{{ image_proxify(result.img_src) }}" data-direct-src="{{ result.img_src }}"
-                        alt="{{ result.title|striptags }}"
-                        onerror="(function(img){var s=img.dataset.fallbackStage|0;if(s===0){img.dataset.fallbackStage=1;img.src=img.dataset.proxySrc||'';return;}if(s==1){img.dataset.fallbackStage=2;img.referrerPolicy='no-referrer';img.src=img.dataset.directSrc||'';return;}if(s==2){img.dataset.fallbackStage=3;var u=img.dataset.directSrc;if(u){img.src='https://images.weserv.nl/?url='+encodeURIComponent(u)+'&w=300&q=80';return;}}img.onerror=null;img.closest('article').style.display='none';})(this);">
+                        alt="{{ result.title|striptags }}">
 
                 {% if (result.img_format and 'gif' in result.img_format|lower) or (result.img_src and '.gif' in
                 result.img_src|lower) %}
