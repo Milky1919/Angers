@@ -1,0 +1,10 @@
+URL 0:
+/image_proxy?url=https%3A%2F%2Fplus.unsplash.com%2Fpremium_photo-1725401053525-2be56dbd0ec9%3Fcrop%3Dentropy%26cs%3Dtinysrgb%26fit%3Dmax%26fm%3Djpg%26ixlib%3Drb-4.1.0%26q%3D80%26w%3D1080&amp;h=feb06cd82f88d50120b51dd9e61c546d93d08dcaadddc72f3b66005c972fbf73
+
+URL 1:
+/image_proxy?url=https%3A%2F%2Fcdn.jsdelivr.net%2Fnpm%2Flucide-static%2Ficons%2Fgem.svg&amp;h=198ae3bbd8af7339ef43df06370c3698c9a85e6e036a69faee11b1d03e34f609
+
+URL 2:
+/image_proxy?url=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fcommons%2Fb%2Fbf%2FKoch_anime.gif&amp;h=08c2ab3d062c875564cab6b99c81e4f1a7c156a6ee7c2504960ad5325f603b3b
+
+
