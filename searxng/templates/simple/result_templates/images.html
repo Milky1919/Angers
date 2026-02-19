@@ -485,6 +485,17 @@
 
                 // Function to open modal
                 function openModal(data) {
+                        // --- Initialization Logic (Clear previous content) ---
+                        modalImage.src = '';
+                        modalImage.alt = '';
+                        modalTitle.textContent = '';
+                        modalSource.textContent = '';
+                        modalResolution.textContent = '';
+                        downloadLink.href = '#';
+                        siteLink.href = '#';
+                        // -----------------------------------------------------
+
+                        // Set new data
                         modalImage.src = data.imgSrc;
                         modalImage.alt = data.title;
 
@@ -609,7 +620,8 @@
                 <img class="image_thumbnail aggressive-load"
                         src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
                         data-src="{% if result.img_src %}{{ image_proxify(result.img_src) }}{% else %}{{ image_proxify(result.thumbnail_src) }}{% endif %}"
-                        alt="{{ result.title|striptags }}">
+                        alt="{{ result.title|striptags }}"
+                        onerror="this.onerror=null; this.referrerPolicy='no-referrer'; this.src=this.parentElement.dataset.fullSrc;">
 
                 {% if (result.img_format and 'gif' in result.img_format|lower) or (result.img_src and '.gif' in
                 result.img_src|lower) %}
