@@ -10,9 +10,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Deploy App to CapRover
-        uses: caprover/deploy-from-github@v1.1.2
-        with:
-          server: ${{ secrets.CAPROVER_URL }}
-          app: ${{ secrets.CAPROVER_APP_NAME }}
-          token: ${{ secrets.CAPROVER_APP_TOKEN }}
+      - name: Create deployment tarball
+        run: tar -czf deploy.tar --exclude='.git' .
+
+      - name: Deploy to CapRover
+        run: |
+          # Remove trailing slash from URL if present
+          CAPROVER_URL="${{ secrets.CAPROVER_URL }}"
+          CAPROVER_URL=${CAPROVER_URL%/}
+          
+          curl -v -H "x-captain-auth: ${{ secrets.CAPROVER_APP_TOKEN }}" \
+               -F "tarFile=@deploy.tar" \
+               "$CAPROVER_URL/api/v2/user/apps/appData/${{ secrets.CAPROVER_APP_NAME }}"
