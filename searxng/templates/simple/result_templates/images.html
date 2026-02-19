@@ -153,6 +153,7 @@
                 line-height: 1.4 !important;
                 display: -webkit-box !important;
                 -webkit-line-clamp: 2;
+                line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden !important;
                 text-decoration: none !important;
@@ -166,21 +167,16 @@
                 color: #8ab4f8 !important;
         }
 
-        /* --- MODAL STYLES --- */
+        /* --- RESPONSIVE DETAIL VIEW (Mobile Modal / Desktop Side Panel) --- */
+
+        /* Base Modal Styles (shared) */
         #shared-image-modal {
                 display: none;
                 position: fixed;
                 z-index: 99999;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
                 background-color: rgba(0, 0, 0, 0.95);
+                /* Dark background */
                 backdrop-filter: blur(5px);
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
                 opacity: 0;
                 transition: opacity 0.3s ease;
         }
@@ -190,45 +186,213 @@
                 opacity: 1;
         }
 
-        .modal-content-wrapper {
-                position: relative;
-                max-width: 90%;
-                max-height: 80%;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-                border: 1px solid #333;
+        /* --- MOBILE (Default / < 768px) --- */
+        @media (max-width: 767px) {
+                #shared-image-modal {
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        height: 100%;
+                        align-items: center;
+                        justify-content: center;
+                        flex-direction: column;
+                }
+
+                .modal-content-wrapper {
+                        position: relative;
+                        max-width: 90%;
+                        max-height: 80%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+                        border: 1px solid #333;
+                }
+
+                .modal-image {
+                        max-width: 100%;
+                        max-height: 80vh;
+                        object-fit: contain;
+                        display: block;
+                }
+
+                .modal-info-bar {
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        background: rgba(0, 0, 0, 0.8);
+                        color: #fff;
+                        padding: 15px;
+                        box-sizing: border-box;
+                        border-top: 1px solid #333;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                }
+
+                /* Lock body scroll on mobile */
+                body.details-active {
+                        overflow: hidden !important;
+                }
         }
 
-        .modal-image {
-                max-width: 100%;
-                max-height: 80vh;
-                object-fit: contain;
-                display: block;
-        }
+        /* --- DESKTOP (>= 768px): Side Panel Layout --- */
+        @media (min-width: 768px) {
 
-        .modal-info-bar {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                background: rgba(0, 0, 0, 0.8);
-                color: #fff;
-                padding: 15px;
-                box-sizing: border-box;
-                border-top: 1px solid #333;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-                position: fixed;
-                /* Stick to bottom of screen */
+                /* === ALWAYS-ON: Override theme constraints for image-only view ===
+                   Theme applies margins and 60/40 grid to #results.
+                   For image search, we want #results to be full-width always. */
+                .center-alignment-yes #main_results #results.only_template_images,
+                #main_results #results.only_template_images {
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        display: block !important;
+                        grid-template-columns: 1fr !important;
+                }
+
+                /* Hide sidebar in image-only mode (causes 60/40 grid split in theme) */
+                #results.only_template_images #sidebar {
+                        display: none !important;
+                }
+
+                /* === ROOT CAUSE FIX ===
+                   SearXNG theme (.center-alignment-yes) applies:
+                   - display:flex; align-items:center on #main_results (centering children)
+                   - margin-left:10rem; margin-right:2rem on #results
+                   - grid-template-columns on #results for sidebar layout
+                   These MUST be overridden with matching specificity. */
+
+                /* Override parent flex centering */
+                .center-alignment-yes body.details-active #main_results,
+                body.details-active #main_results {
+                        align-items: flex-start !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        padding: 0 !important;
+                }
+
+                /* Override #results margins and grid - THE ACTUAL GAP FIX */
+                .center-alignment-yes body.details-active #main_results #results,
+                body.details-active #main_results #results {
+                        margin-left: 0 !important;
+                        margin-right: 40% !important;
+                        width: auto !important;
+                        max-width: none !important;
+                        grid-template-columns: 1fr !important;
+                        display: block !important;
+                }
+
+                /* Hide sidebar when detail panel is open (it would conflict) */
+                body.details-active #sidebar {
+                        display: none !important;
+                }
+
+                /* Grid fills available space */
+                body.details-active #main_results #urls {
+                        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+                        width: 100% !important;
+                        max-width: none !important;
+                        margin: 0 !important;
+                        padding: 10px !important;
+                        box-sizing: border-box !important;
+                }
+
+                /* Side Panel Styles */
+                #shared-image-modal {
+                        left: auto;
+                        right: 0;
+                        top: 0;
+                        width: 40%;
+                        height: 100vh;
+                        background-color: #202124;
+                        border-left: 1px solid #3c4043;
+                        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+                        backdrop-filter: none;
+                        flex-direction: column;
+                        justify-content: flex-start;
+                        padding: 20px;
+                        box-sizing: border-box;
+                        overflow-y: auto;
+                        z-index: 100 !important;
+                }
+
+                /* Ensure footer is visible above panel */
+                footer,
+                .footer {
+                        position: relative;
+                        z-index: 101 !important;
+                }
+
+                /* Content Wrapper in Panel */
+                .modal-content-wrapper {
+                        width: 100%;
+                        max-width: 100%;
+                        height: auto;
+                        /* Auto height */
+                        display: block;
+                        /* Stack elements */
+                        margin-bottom: 20px;
+                        box-shadow: none;
+                        border: none;
+                }
+
+                .modal-image {
+                        width: 100%;
+                        max-height: 60vh;
+                        /* Limit image height in panel */
+                        object-fit: contain;
+                        /* Keep aspect ratio */
+                        background: #000;
+                        /* Letterbox styling */
+                }
+
+                /* Info Bar in Panel (Static) */
+                .modal-info-bar {
+                        position: static;
+                        /* Not fixed at bottom for panel */
+                        background: transparent;
+                        border-top: none;
+                        flex-direction: column;
+                        /* Stack content */
+                        align-items: flex-start;
+                        gap: 15px;
+                        padding: 0;
+                        width: 100%;
+                }
+
+                .modal-text {
+                        padding-right: 0;
+                        width: 100%;
+                }
+
+                .modal-title {
+                        font-size: 1.2rem;
+                        margin-bottom: 8px;
+                }
+
+                .modal-source {
+                        display: block;
+                        margin-bottom: 5px;
+                }
+
+                .modal-actions {
+                        width: 100%;
+                        justify-content: space-between;
+                        /* Buttons fill width */
+                }
+
+                .btn-visit {
+                        flex: 1;
+                        /* Full width buttons */
+                        text-align: center;
+                }
         }
 
         .modal-text {
                 flex: 1;
-                padding-right: 20px;
         }
 
         .modal-title {
@@ -237,6 +401,11 @@
                 color: #fff;
                 margin-bottom: 5px;
                 display: block;
+                text-decoration: none;
+        }
+
+        .modal-title:hover {
+                text-decoration: underline;
         }
 
         .modal-source {
@@ -270,10 +439,10 @@
 
         .close-modal {
                 position: absolute;
-                top: 20px;
-                right: 30px;
+                top: 10px;
+                right: 15px;
                 color: #f1f1f1;
-                font-size: 40px;
+                font-size: 30px;
                 font-weight: bold;
                 cursor: pointer;
                 z-index: 10000;
@@ -329,13 +498,13 @@
                         siteLink.href = data.url;
 
                         modal.classList.add('active');
-                        document.body.style.overflow = 'hidden'; // Lock scroll
+                        document.body.classList.add('details-active'); // Toggle class for layout/lock
                 }
 
                 // Function to close modal
                 function closeModal() {
                         modal.classList.remove('active');
-                        document.body.style.overflow = ''; // Unlock scroll
+                        document.body.classList.remove('details-active'); // Toggle class
                         setTimeout(() => {
                                 modalImage.src = ''; // Clear source to stop potential loading/playing
                         }, 300);
@@ -360,9 +529,14 @@
                 // Close events
                 closeModalBtn.addEventListener('click', closeModal);
 
+                // Click outside logic (Modified for Split View)
                 window.addEventListener('click', function (e) {
-                        if (e.target === modal) {
-                                closeModal();
+                        // If modal is active
+                        if (modal.classList.contains('active')) {
+                                // If click is NOT inside modal content and NOT on an image link
+                                if (!modal.contains(e.target) && !e.target.closest('.image-link-wrapper')) {
+                                        closeModal();
+                                }
                         }
                 });
 
