@@ -619,9 +619,10 @@
 
                 <img class="image_thumbnail aggressive-load"
                         src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-                        data-src="{% if result.thumbnail_src %}{{ image_proxify(result.thumbnail_src) }}{% else %}{{ image_proxify(result.img_src) }}{% endif %}"
+                        data-src="{% if result.thumbnail_src %}{{ result.thumbnail_src }}{% else %}{{ image_proxify(result.img_src) }}{% endif %}"
+                        data-proxy-src="{{ image_proxify(result.img_src) }}" data-direct-src="{{ result.img_src }}"
                         alt="{{ result.title|striptags }}"
-                        onerror="this.onerror=null; this.referrerPolicy='no-referrer'; this.src=this.parentElement.dataset.fullSrc;">
+                        onerror="(function(img){var s=img.dataset.fallbackStage|0;if(s===0){img.dataset.fallbackStage=1;img.src=img.dataset.proxySrc||'';return;}if(s==1){img.dataset.fallbackStage=2;img.referrerPolicy='no-referrer';img.src=img.dataset.directSrc||'';return;}if(s==2){img.dataset.fallbackStage=3;var u=img.dataset.directSrc;if(u){img.src='https://images.weserv.nl/?url='+encodeURIComponent(u)+'&w=300&q=80';return;}}img.onerror=null;img.closest('article').style.display='none';})(this);">
 
                 {% if (result.img_format and 'gif' in result.img_format|lower) or (result.img_src and '.gif' in
                 result.img_src|lower) %}
