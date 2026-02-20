@@ -14,6 +14,7 @@ search:
   default_lang: "auto"
   ban_time_on_ip: 5
   max_ban_time_on_ip: 120
+  request_timeout: 3.0 # Cut off slow engines after 3 seconds to keep overall response fast
   
   # Image search specific
   formats:
@@ -26,6 +27,9 @@ server:
   secret_key: "replace_with_your_secure_random_string_in_production" # Change this via env var or manually!
   base_url: false # Use SEARXNG_BASE_URL env var or request Host
   image_proxy: true  # Proxy images to avoid tracking/loading from source
+
+redis:
+  url: redis://redis:6379/0
 
 ui:
   static_use_hash: true
