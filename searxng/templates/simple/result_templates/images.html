@@ -672,41 +672,25 @@
                         }, 8000);
                 }
 
-                // --- Lazy Loading via IntersectionObserver ---
-                const observerOptions = {
-                        root: null,
-                        rootMargin: '1500px 0px 1500px 0px',
-                        threshold: 0
-                };
-
-                const imageObserver = new IntersectionObserver((entries, observer) => {
-                        entries.forEach(entry => {
-                                if (entry.isIntersecting) {
-                                        const img = entry.target;
-                                        if (img.dataset.src) {
-                                                // Start monitoring BEFORE setting src
-                                                monitorImage(img);
-                                                img.src = img.dataset.src;
-                                                img.removeAttribute('data-src');
-                                                img.classList.add('loaded');
-                                        }
-                                        observer.unobserve(img);
-                                }
-                        });
-                }, observerOptions);
-
-                function observeNewImages() {
-                        const images = document.querySelectorAll('img.aggressive-load:not(.observed)');
+                // --- Direct Background Loading (Replaces IntersectionObserver) ---
+                // Wait, since we fetch batches (e.g., 20 at a time), we can just trigger them all to load.
+                function loadPendingImages() {
+                        const images = document.querySelectorAll('img.aggressive-load:not(.loading-started)');
                         images.forEach(img => {
-                                imageObserver.observe(img);
-                                img.classList.add('observed');
+                                img.classList.add('loading-started');
+                                if (img.dataset.src) {
+                                        monitorImage(img);
+                                        img.src = img.dataset.src;
+                                        img.removeAttribute('data-src');
+                                        img.classList.add('loaded');
+                                }
                         });
                 }
 
-                // Initial observation
-                observeNewImages();
+                // Initial loading trigger
+                loadPendingImages();
 
-                // Watch for new content (Infinite Scroll / dynamic additions)
+                // Watch for new content (Infinite Scroll additions)
                 const container = document.getElementById('main_results') || document.body;
                 const mutationObserver = new MutationObserver((mutations) => {
                         let shouldUpdate = false;
@@ -716,7 +700,7 @@
                                 }
                         });
                         if (shouldUpdate) {
-                                observeNewImages();
+                                loadPendingImages();
                         }
                 });
                 mutationObserver.observe(container, { childList: true, subtree: true });
