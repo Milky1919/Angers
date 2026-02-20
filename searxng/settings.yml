@@ -23,8 +23,8 @@ search:
 server:
   port: 8080
   bind_address: "0.0.0.0"
-  secret_key: "ultrasecretkeyreplacebeforeproduction" # Change this!
-  base_url: "http://localhost:8080"
+  secret_key: "replace_with_your_secure_random_string_in_production" # Change this via env var or manually!
+  base_url: false # Use SEARXNG_BASE_URL env var or request Host
   image_proxy: true  # Proxy images to avoid tracking/loading from source
 
 ui:
@@ -49,7 +49,6 @@ categories_as_tabs:
     - startpage images
     - yahoo images
     - yandex images
-    - 1px
     - deviantart
     - flickr
     - wallhaven
@@ -79,11 +78,6 @@ engines:
   - name: duckduckgo images
     engine: duckduckgo_images
     shortcut: dii
-    disabled: false
-
-  - name: 1px
-    engine: 1px
-    shortcut: px
     disabled: false
 
   - name: wallhaven

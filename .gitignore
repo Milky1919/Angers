@@ -5,3 +5,7 @@ dist/
 build/
 *.log
 .vscode/
+
+# Debug and local files
+debug_*
+local_images_template.html
