@@ -19,11 +19,26 @@
                 overflow-x: hidden !important;
         }
 
+        /* 
+           Crucial Fix for Gaps: 
+           Articles must be completely out of flow before verification.
+        */
+        #main_results #urls .result-images {
+                display: none !important;
+                /* Start completely hidden */
+        }
+
+        #main_results #urls .result-images.verified-ok {
+                display: flex !important;
+                /* Only show when verified */
+        }
+
         /* Force parent container to use Grid */
         #main_results #urls {
                 display: grid !important;
                 grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
-                grid-auto-flow: dense !important; /* ← 隙間をテトリスのように詰める指定！ */
+                grid-auto-flow: dense !important;
+                /* ← 隙間をテトリスのように詰める指定！ */
                 gap: 12px !important;
                 justify-content: center !important;
                 padding: 12px !important;
@@ -294,7 +309,8 @@
                 /* Grid fills available space */
                 body.details-active #main_results #urls {
                         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
-                        grid-auto-flow: dense !important; /* ← ここにも念のため追加 */
+                        grid-auto-flow: dense !important;
+                        /* ← ここにも念のため追加 */
                         width: 100% !important;
                         max-width: none !important;
                         margin: 0 !important;
@@ -605,6 +621,7 @@
                                         return;
                                 }
                                 // Image loaded successfully
+                                img.closest('article').classList.add('verified-ok');
                                 img.classList.add('verified-ok');
                         }
                 }
@@ -646,6 +663,7 @@
                                 if (!img.classList.contains('verified-ok')) {
                                         // Double-check: maybe it loaded between scheduling and execution
                                         if (img.complete && img.naturalWidth > 2 && img.naturalHeight > 2) {
+                                                img.closest('article').classList.add('verified-ok');
                                                 img.classList.add('verified-ok');
                                                 return;
                                         }
@@ -724,6 +742,7 @@
                                         } else if (img.naturalWidth <= 2 && img.naturalHeight <= 2) {
                                                 hideResult(img);
                                         } else {
+                                                img.closest('article').classList.add('verified-ok');
                                                 img.classList.add('verified-ok');
                                         }
                                 }
@@ -829,13 +848,23 @@
                 const bottomTrigger = document.getElementById('pagination');
                 if (bottomTrigger) {
                         infiniteScrollObserver.observe(bottomTrigger);
-                        
+
                         // ※無限スクロール中はデフォルトのページ送りのボタンを見えなくして継ぎ目なくする
                         bottomTrigger.style.opacity = '0';
                         bottomTrigger.style.pointerEvents = 'none';
                         bottomTrigger.style.height = '1px';
                         bottomTrigger.style.overflow = 'hidden';
                 }
+
+                // Initial verification trigger for images already in DOM
+                setTimeout(() => {
+                        const initialImages = document.querySelectorAll('.result-images:not(.verified-ok) img.image_thumbnail');
+                        initialImages.forEach(img => {
+                                if (img.complete) {
+                                        validateImage(img);
+                                }
+                        });
+                }, 100);
 
         });
 </script>
