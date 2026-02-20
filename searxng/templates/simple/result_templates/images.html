@@ -23,6 +23,7 @@
         #main_results #urls {
                 display: grid !important;
                 grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+                grid-auto-flow: dense !important; /* ← 隙間をテトリスのように詰める指定！ */
                 gap: 12px !important;
                 justify-content: center !important;
                 padding: 12px !important;
@@ -293,6 +294,7 @@
                 /* Grid fills available space */
                 body.details-active #main_results #urls {
                         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+                        grid-auto-flow: dense !important; /* ← ここにも念のため追加 */
                         width: 100% !important;
                         max-width: none !important;
                         margin: 0 !important;
@@ -728,18 +730,15 @@
                         });
                 }, 3000);
 
-                // --- Auto-Refill: fetch next page if too many results are hidden ---
+                // --- Auto-Refill: fetch next page when scrolling or if hidden ---
                 const debouncedRefill = debounce(() => {
-                        checkAndRefillResults();
+                        checkAndRefillResults(false);
                 }, 1000);
 
                 let isFetching = false;
-                let refillAttempts = 0;
-                const MAX_REFILL_ATTEMPTS = 5;
 
-                async function checkAndRefillResults() {
+                async function checkAndRefillResults(isScrollDriven = true) {
                         if (isFetching) return;
-                        if (refillAttempts >= MAX_REFILL_ATTEMPTS) return;
 
                         const allResults = document.querySelectorAll('.result-images');
                         let visibleCount = 0;
@@ -749,8 +748,9 @@
                                 }
                         });
 
-                        if (visibleCount < 15) {
-                                console.log('[K0GE] Visible: ' + visibleCount + '. Fetching more...');
+                        // 補充条件： 下までスクロールした(isScrollDriven) または 表示枚数が極端に減った場合
+                        if (isScrollDriven || visibleCount < 15) {
+                                console.log('[K0GE] Fetching next page...');
 
                                 const pagination = document.getElementById('pagination');
                                 if (!pagination) {
@@ -807,7 +807,7 @@
                                                 console.log('[K0GE] Appended ' + newResults.length + ' results.');
                                         } else {
                                                 console.log('[K0GE] No more images available.');
-                                                refillAttempts = MAX_REFILL_ATTEMPTS;
+                                                // Optional: Remove observer if no more pages
                                         }
                                 } catch (error) {
                                         console.error('[K0GE] Fetch error:', error);
@@ -816,6 +816,27 @@
                                 }
                         }
                 }
+
+                // --- Infinite Scroll Trigger Observer ---
+                const infiniteScrollObserver = new IntersectionObserver((entries) => {
+                        // pagination (最下部) が少しでも画面に入ったら次を読み込む
+                        if (entries[0].isIntersecting) {
+                                checkAndRefillResults(true);
+                        }
+                }, { rootMargin: '800px 0px', threshold: 0.1 }); // 早めに読み込みを開始する
+
+                // pagination要素を監視して無限スクロールを発動させる
+                const bottomTrigger = document.getElementById('pagination');
+                if (bottomTrigger) {
+                        infiniteScrollObserver.observe(bottomTrigger);
+                        
+                        // ※無限スクロール中はデフォルトのページ送りのボタンを見えなくして継ぎ目なくする
+                        bottomTrigger.style.opacity = '0';
+                        bottomTrigger.style.pointerEvents = 'none';
+                        bottomTrigger.style.height = '1px';
+                        bottomTrigger.style.overflow = 'hidden';
+                }
+
         });
 </script>
 {% endif %}
